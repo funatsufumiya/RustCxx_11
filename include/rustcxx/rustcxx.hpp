@@ -14,16 +14,6 @@
 
 namespace rust {
 
-// Helper trait to check if a type is a variant
-template <typename T>
-struct is_variant : std::false_type {};
-
-template <typename... Types>
-struct is_variant<std::variant<Types...>> : std::true_type {};
-
-template <typename T>
-constexpr bool is_variant_v = is_variant<T>::value;
-
 // Helper struct for creating overloaded visitors (C++17 compatible)
 template <class... Ts>
 struct overloads : Ts... {
@@ -37,10 +27,7 @@ overloads(Ts...) -> overloads<Ts...>;
 
 // Helper for pattern matching - similar to Rust's match
 template <typename Variant, class... Ts>
-auto match(Variant&& variant, Ts&&... ts) {
-  static_assert(is_variant_v<std::decay_t<Variant>>,
-                "match() requires a std::variant");
-
+constexpr auto match(Variant&& variant, Ts&&... ts) -> decltype(auto) {
   return std::visit(overloads{std::forward<Ts>(ts)...},
                     std::forward<Variant>(variant));
 }
@@ -48,9 +35,6 @@ auto match(Variant&& variant, Ts&&... ts) {
 // Enum-like wrapper around std::variant for better ergonomics
 template <typename... Types>
 class Enum {
- private:
-  std::variant<Types...> value_;
-
  public:
   // Default constructor
   Enum() = default;
@@ -66,6 +50,8 @@ class Enum {
     value_ = std::forward<T>(t);
     return *this;
   }
+
+  ~Enum() = default;
 
   // Get the index of the currently held type
   constexpr std::size_t index() const noexcept { return value_.index(); }
@@ -123,20 +109,22 @@ class Enum {
   bool operator==(const Enum& other) const { return value_ == other.value_; }
 
   bool operator!=(const Enum& other) const { return value_ != other.value_; }
+
+ private:
+  std::variant<Types...> value_;
 };
 
 // Rust-style Result type
 template <typename T, typename E = std::string>
 class Result {
- private:
-  std::variant<T, E> value_;
-
  public:
   // Construct Ok result
   static Result Ok(T value) { return Result(value); }
 
   // Construct Err result
   static Result Err(E error) { return Result(error); }
+
+  ~Result() = default;
 
   // Check if result is Ok
   constexpr bool is_ok() const noexcept {
@@ -210,21 +198,19 @@ class Result {
   // Map error function - transform Err value, leave Ok unchanged
   template <typename F>
   auto map_err(F&& f) -> Result<T, std::invoke_result_t<F, E>> {
+    using ReturnType = Result<T, std::invoke_result_t<F, E>>;
     if (is_err()) {
-      return Result<T, std::invoke_result_t<F, E>>::Err(
-          std::forward<F>(f)(std::get<E>(value_)));
+      return ReturnType::Err(f(std::get<E>(value_)));
     } else {
-      return Result<T, std::invoke_result_t<F, E>>::Ok(std::get<T>(value_));
+      return ReturnType::Ok(std::get<T>(value_));
     }
   }
 
   // And then - chain Results
   template <typename F>
   auto and_then(F&& f) -> std::invoke_result_t<F, T> {
-    static_assert(std::is_invocable_v<F, T>,
-                  "Function must be callable with T");
     if (is_ok()) {
-      return std::forward<F>(f)(std::get<T>(value_));
+      return f(std::get<T>(value_));
     } else {
       using ReturnType = std::invoke_result_t<F, T>;
       return ReturnType::Err(std::get<E>(value_));
@@ -250,14 +236,13 @@ class Result {
  private:
   template <typename U>
   explicit Result(U&& u) : value_(std::forward<U>(u)) {}
+
+  std::variant<T, E> value_;
 };
 
 // Rust-style Option type
 template <typename T>
 class Option {
- private:
-  std::optional<T> value_;
-
  public:
   // Construct Some option
   static Option Some(T value) { return Option(std::move(value)); }
@@ -267,6 +252,8 @@ class Option {
 
   // Default constructor creates None
   Option() : value_(std::nullopt) {}
+
+  ~Option() = default;
 
   // Check if option is Some
   bool is_some() const noexcept { return value_.has_value(); }
@@ -310,21 +297,19 @@ class Option {
   // Map function - transform Some value, leave None unchanged
   template <typename F>
   auto map(F&& f) -> Option<std::invoke_result_t<F, T>> {
+    using ReturnType = Option<std::invoke_result_t<F, T>>;
     if (is_some()) {
-      return Option<std::invoke_result_t<F, T>>::Some(
-          std::forward<F>(f)(*value_));
+      return ReturnType::Some(f(*value_));
     } else {
-      return Option<std::invoke_result_t<F, T>>::None();
+      return ReturnType::None();
     }
   }
 
   // And then - chain Options
   template <typename F>
   auto and_then(F&& f) -> std::invoke_result_t<F, T> {
-    static_assert(std::is_invocable_v<F, T>,
-                  "Function must be callable with T");
     if (is_some()) {
-      return std::forward<F>(f)(*value_);
+      return f(*value_);
     } else {
       using ReturnType = std::invoke_result_t<F, T>;
       return ReturnType::None();
@@ -335,27 +320,42 @@ class Option {
   template <typename SomeFunc, typename NoneFunc>
   auto match(SomeFunc&& some_func, NoneFunc&& none_func) -> decltype(auto) {
     if (is_some()) {
-      return std::forward<SomeFunc>(some_func)(*value_);
+      return some_func(*value_);
     } else {
-      return std::forward<NoneFunc>(none_func)();
+      return none_func();
     }
   }
 
  private:
   explicit Option(T&& value) : value_(std::forward<T>(value)) {}
+
+  std::optional<T> value_;
 };
 
-// Helper function to create enums more easily
-template <typename... Types, typename T>
-auto make_enum(T&& value) -> Enum<Types...> {
-  return Enum<Types...>(std::forward<T>(value));
-}
+}  // namespace rust
 
 // Convenience macros for defining enum variants
-#define ENUM_VARIANT(name)                                                  \
+#define INTERNAL_ENUM_VARIANT_WITH_FIELDS(name, ...)         \
+  struct name {                                              \
+    __VA_ARGS__;                                             \
+    constexpr bool operator<=>(const name&) const = default; \
+  }
+
+// Helper macro for enum variants without fields.
+// It takes only the name as an argument.
+#define INTERNAL_ENUM_VARIANT_NO_FIELDS(name)                               \
   struct name {                                                             \
     constexpr bool operator==(const name&) const noexcept { return true; }  \
     constexpr bool operator!=(const name&) const noexcept { return false; } \
   }
 
-}  // namespace rust
+// This macro acts as a dispatcher. It checks the number of arguments and
+// selects the appropriate helper macro.
+// If there's only one argument (the name), it selects
+// INTERNAL_ENUM_VARIANT_NO_FIELDS. If there are more arguments (name and
+// fields), it selects INTERNAL_ENUM_VARIANT_WITH_FIELDS.
+#define GET_DISPATCH_MACRO(_1, _2, NAME, ...) NAME
+
+#define ENUM_VARIANT(...)                                            \
+  GET_DISPATCH_MACRO(__VA_ARGS__, INTERNAL_ENUM_VARIANT_WITH_FIELDS, \
+                     INTERNAL_ENUM_VARIANT_NO_FIELDS)(__VA_ARGS__)

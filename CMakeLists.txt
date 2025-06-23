@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.14)
 project(RustCxx VERSION 1.0.0 LANGUAGES CXX)
 
 # Set C++ standard
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Header-only library
@@ -17,7 +17,7 @@ target_include_directories(
 # Example executable
 option(RUSTCXX_BUILD_EXAMPLES "Build examples" ON)
 
-if(RUSTCXXNUM_BUILD_EXAMPLES)
+if(RUSTCXX_BUILD_EXAMPLES)
     add_executable(rustcxx_basic_usage examples/basic_usage.cpp)
     target_link_libraries(rustcxx_basic_usage rustcxx)
 
@@ -25,7 +25,10 @@ if(RUSTCXXNUM_BUILD_EXAMPLES)
     if(MSVC)
         target_compile_options(rustcxx_basic_usage PRIVATE /W4)
     else()
-        target_compile_options(rustcxx_basic_usage PRIVATE -Wall -Wextra -Wpedantic)
+        target_compile_options(
+            rustcxx_basic_usage
+            PRIVATE -Wall -Wextra -Wpedantic
+        )
     endif()
 endif()
 

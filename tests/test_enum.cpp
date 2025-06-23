@@ -14,49 +14,16 @@ using namespace rust;  // NOLINT
 // Test variants
 ENUM_VARIANT(Red);
 ENUM_VARIANT(Green);
-
-struct Blue {
-  int intensity = 0;
-};
+ENUM_VARIANT(Blue, int intensity = 0);  // NOLINT
 
 using Color = Enum<Red, Green, Blue>;
 
-// Add equality operators for Blue
-bool operator==(const Blue& lhs, const Blue& rhs) {
-  return lhs.intensity == rhs.intensity;
-}
-
-bool operator!=(const Blue& lhs, const Blue& rhs) { return !(lhs == rhs); }
-
 // Message enum for testing
-struct TextMessage {
-  std::string content;
-};
-
-struct NumberMessage {
-  int value;
-};
-
+ENUM_VARIANT(TextMessage, std::string content; int data);  // NOLINT
+ENUM_VARIANT(NumberMessage, int value);                    // NOLINT
 ENUM_VARIANT(EmptyMessage);
 
 using Message = Enum<TextMessage, NumberMessage, EmptyMessage>;
-
-// Add equality operators for message variants
-bool operator==(const TextMessage& lhs, const TextMessage& rhs) {
-  return lhs.content == rhs.content;
-}
-
-bool operator!=(const TextMessage& lhs, const TextMessage& rhs) {
-  return !(lhs == rhs);
-}
-
-bool operator==(const NumberMessage& lhs, const NumberMessage& rhs) {
-  return lhs.value == rhs.value;
-}
-
-bool operator!=(const NumberMessage& lhs, const NumberMessage& rhs) {
-  return !(lhs == rhs);
-}
 
 class EnumTest : public ::testing::Test {
  protected:
@@ -98,18 +65,18 @@ TEST_F(EnumTest, GetValue) {
 TEST_F(EnumTest, PatternMatching) {
   Color blue = Blue{200};
 
-  std::string result = blue.match(
+  const auto& visitor = overloads{
       [](const Red&) { return std::string("red"); },
       [](const Green&) { return std::string("green"); },
-      [](const Blue& b) { return "blue:" + std::to_string(b.intensity); });
+      [](const Blue& b) { return "blue:" + std::to_string(b.intensity); },
+  };
+
+  auto result = blue.match(visitor);
 
   EXPECT_EQ(result, "blue:200");
 
   Color red = Red{};
-  result = red.match(
-      [](const Red&) { return std::string("red"); },
-      [](const Green&) { return std::string("green"); },
-      [](const Blue& b) { return "blue:" + std::to_string(b.intensity); });
+  result = red.match(visitor);
 
   EXPECT_EQ(result, "red");
 }
@@ -144,7 +111,7 @@ TEST_F(EnumTest, Equality) {
 }
 
 TEST_F(EnumTest, ComplexData) {
-  Message text_msg = TextMessage{"Hello, World!"};
+  Message text_msg = TextMessage{"Hello, World!", 123};
   Message num_msg = NumberMessage{42};
   Message empty_msg = EmptyMessage{};
 

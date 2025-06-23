@@ -27,7 +27,7 @@ repos:
     types_or: [c, c++, cuda]
     args: [-i, --sort-includes, ]
   - id: cppcheck
-    args: [--inline-suppr]
+    args: [--inline-suppr, -Iinclude]
   - id: cpplint
 - repo: https://github.com/BlankSpruce/gersemi
   rev: 0.17.1

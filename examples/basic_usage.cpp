@@ -14,24 +14,14 @@ using namespace rust;  // NOLINT
 
 ENUM_VARIANT(Red);
 ENUM_VARIANT(Green);
-
-struct Blue {
-  int intensity = 0;
-  int value = 0;
-};
+ENUM_VARIANT(Blue, int intensity = 0; int value = 0);  // NOLINT
 
 using Color = Enum<Red, Green, Blue>;
 
 // Example 2: More complex enum like Rust's Option or Result
 ENUM_VARIANT(Loading);
-
-struct Success {
-  std::string data;
-};
-
-struct Error {
-  std::string message;
-};
+ENUM_VARIANT(Success, std::string data);
+ENUM_VARIANT(Error, std::string message);
 
 using ApiResponse = Enum<Loading, Success, Error>;
 
@@ -83,39 +73,27 @@ void demonstrate_api_response() {
 
   ApiResponse response = Loading{};
 
-  // Handle different states
-  response.match(
+  const auto& func = overloads{
       [](const Loading&) -> void { std::cout << "Loading..." << std::endl; },
       [](const Success& s) -> void {
         std::cout << "Success: " << s.data << std::endl;
       },
       [](const Error& e) -> void {
         std::cout << "Error: " << e.message << std::endl;
-      });
+      }};
+
+  // Handle different states
+  response.match(func);
 
   // Simulate successful response
   response = Success{"Hello, World!"};
 
-  response.match(
-      [](const Loading&) -> void { std::cout << "Loading..." << std::endl; },
-      [](const Success& s) -> void {
-        std::cout << "Success: " << s.data << std::endl;
-      },
-      [](const Error& e) -> void {
-        std::cout << "Error: " << e.message << std::endl;
-      });
+  response.match(func);
 
   // Simulate error
   response = Error{"Network timeout"};
 
-  response.match(
-      [](const Loading&) -> void { std::cout << "Loading..." << std::endl; },
-      [](const Success& s) -> void {
-        std::cout << "Success: " << s.data << std::endl;
-      },
-      [](const Error& e) -> void {
-        std::cout << "Error: " << e.message << std::endl;
-      });
+  response.match(func);
 }
 
 void demonstrate_result_type() {

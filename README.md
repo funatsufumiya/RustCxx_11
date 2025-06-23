@@ -1,6 +1,6 @@
 # RustCxx - Rust-style Enums for C++
 
-RustCxx is a modern C++17 header-only library that provides Rust-style enums, `Result`, and `Option` types for C++. It's designed to bring the expressiveness and safety of Rust's type system to C++.
+RustCxx is a modern C++20 header-only library that provides Rust-style enums, `Result`, and `Option` types for C++. It's designed to bring the expressiveness and safety of Rust's type system to C++.
 
 ## Features
 
@@ -8,7 +8,7 @@ RustCxx is a modern C++17 header-only library that provides Rust-style enums, `R
 - 🦀 **Rust-inspired**: Familiar API for Rust developers
 - 🔒 **Type-safe**: Compile-time type checking
 - 🎯 **Pattern Matching**: Expressive pattern matching with lambdas
-- ⚡ **Modern C++**: Requires C++17, uses `std::variant` under the hood
+- ⚡ **Modern C++**: Requires C++20, uses `std::variant` under the hood
 - 🧪 **Well-tested**: Comprehensive test suite
 
 ## Quick Start
@@ -22,10 +22,7 @@ using namespace rustcxx;
 // Define enum variants
 ENUM_VARIANT(Red);
 ENUM_VARIANT(Green);
-
-struct Blue {
-    int intensity;
-};
+ENUM_VARIANT(Blue, int intensity);
 
 using Color = Enum<Red, Green, Blue>;
 
@@ -96,7 +93,7 @@ auto greeting = find_user(1)
 
 ### Requirements
 
-- C++17 compatible compiler
+- C++20 compatible compiler
 - CMake 3.14 or later
 
 ### Build Examples
@@ -207,7 +204,7 @@ See the `examples/` directory for more comprehensive examples:
 
 | Rust | RustCxx |
 |------|-------|
-| `enum Color { Red, Green, Blue(u8) }` | `ENUM_VARIANT(Red); ENUM_VARIANT(Red); struct Blue { int intensity; }; using Color = Enum<Red, Green, Blue>;` |
+| `enum Color { Red, Green, Blue(u8) }` | `ENUM_VARIANT(Red); ENUM_VARIANT(Red); ENUM_VARIANT(Blue, uint8_t intensity); using Color = Enum<Red, Green, Blue>;` |
 | `Result<T, E>` | `Result<T, E>` |
 | `Option<T>` | `Option<T>` |
 | `match expr { ... }` | `expr.match(...)` |
