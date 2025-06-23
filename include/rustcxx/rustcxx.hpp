@@ -119,10 +119,10 @@ template <typename T, typename E = std::string>
 class Result {
  public:
   // Construct Ok result
-  static Result Ok(T value) { return Result(value); }
+  static Result Ok(T value) { return Result(std::move(value)); }
 
   // Construct Err result
-  static Result Err(E error) { return Result(error); }
+  static Result Err(E error) { return Result(std::move(error)); }
 
   ~Result() = default;
 
