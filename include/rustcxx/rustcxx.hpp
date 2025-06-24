@@ -207,10 +207,11 @@ class Result {
   // Map function - transform Ok value, leave Err unchanged
   template <typename F>
   inline auto map(F&& f) noexcept -> decltype(auto) {
+    using ReturnType = Result<std::invoke_result_t<F, T>, E>;
     if (is_ok()) {
-      return Result<std::invoke_result_t<F, T>, E>::Ok(f(std::get<T>(value_)));
+      return ReturnType::Ok(f(std::get<T>(value_)));
     } else {
-      return Result<std::invoke_result_t<F, T>, E>::Err(std::get<E>(value_));
+      return ReturnType::Err(std::get<E>(value_));
     }
   }
 
