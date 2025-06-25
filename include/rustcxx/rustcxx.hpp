@@ -22,8 +22,7 @@ struct overloads : Ts... {
 
 // Helper for pattern matching - similar to Rust's match
 template <typename Variant, class... Ts>
-inline constexpr auto match(Variant&& variant, Ts&&... ts) noexcept
-    -> decltype(auto) {
+inline constexpr decltype(auto) match(Variant&& variant, Ts&&... ts) noexcept {
   return std::visit(overloads{std::forward<Ts>(ts)...},
                     std::forward<Variant>(variant));
 }
@@ -102,17 +101,17 @@ class Enum {
 
   // Match function for pattern matching
   template <typename... Ts>
-  inline auto match(Ts&&... ts) & noexcept -> decltype(auto) {
+  inline decltype(auto) match(Ts&&... ts) & noexcept {
     return rust::match(value_, std::forward<Ts>(ts)...);
   }
 
   template <typename... Ts>
-  inline auto match(Ts&&... ts) const& noexcept -> decltype(auto) {
+  inline decltype(auto) match(Ts&&... ts) const& noexcept {
     return rust::match(value_, std::forward<Ts>(ts)...);
   }
 
   template <typename... Ts>
-  inline auto match(Ts&&... ts) && noexcept -> decltype(auto) {
+  inline decltype(auto) match(Ts&&... ts) && noexcept {
     return rust::match(std::move(value_), std::forward<Ts>(ts)...);
   }
 
@@ -206,50 +205,50 @@ class Result {
 
   // Map function - transform Ok value, leave Err unchanged
   template <typename F>
-  inline auto map(F&& f) noexcept -> decltype(auto) {
-    using ReturnType = Result<std::invoke_result_t<F, T>, E>;
+  inline decltype(auto) map(F&& f) noexcept {
+    using result = Result<std::invoke_result_t<F, T>, E>;
     if (is_ok()) {
-      return ReturnType::Ok(f(std::get<T>(value_)));
+      return result::Ok(f(std::get<T>(value_)));
     } else {
-      return ReturnType::Err(std::get<E>(value_));
+      return result::Err(std::get<E>(value_));
     }
   }
 
   // Map error function - transform Err value, leave Ok unchanged
   template <typename F>
-  inline auto map_err(F&& f) noexcept -> decltype(auto) {
-    using ReturnType = Result<T, std::invoke_result_t<F, E>>;
+  inline decltype(auto) map_err(F&& f) noexcept {
+    using result = Result<T, std::invoke_result_t<F, E>>;
     if (is_err()) {
-      return ReturnType::Err(f(std::get<E>(value_)));
+      return result::Err(f(std::get<E>(value_)));
     } else {
-      return ReturnType::Ok(std::get<T>(value_));
+      return result::Ok(std::get<T>(value_));
     }
   }
 
   // And then - chain Results
   template <typename F>
-  inline auto and_then(F&& f) noexcept -> decltype(auto) {
+  inline decltype(auto) and_then(F&& f) noexcept {
     if (is_ok()) {
       return f(std::get<T>(value_));
     } else {
-      using ReturnType = std::invoke_result_t<F, T>;
-      return ReturnType::Err(std::get<E>(value_));
+      using result = std::invoke_result_t<F, T>;
+      return result::Err(std::get<E>(value_));
     }
   }
 
   // Pattern matching
   template <typename... Ts>
-  inline auto match(Ts&&... ts) & noexcept -> decltype(auto) {
+  inline decltype(auto) match(Ts&&... ts) & noexcept {
     return rust::match(value_, std::forward<Ts>(ts)...);
   }
 
   template <typename... Ts>
-  inline auto match(Ts&&... ts) const& noexcept -> decltype(auto) {
+  inline decltype(auto) match(Ts&&... ts) const& noexcept {
     return rust::match(value_, std::forward<Ts>(ts)...);
   }
 
   template <typename... Ts>
-  inline auto match(Ts&&... ts) && noexcept -> decltype(auto) {
+  inline decltype(auto) match(Ts&&... ts) && noexcept {
     return rust::match(std::move(value_), std::forward<Ts>(ts)...);
   }
 
@@ -318,30 +317,30 @@ class Option {
 
   // Map function - transform Some value, leave None unchanged
   template <typename F>
-  inline auto map(F&& f) noexcept -> decltype(auto) {
-    using ReturnType = Option<std::invoke_result_t<F, T>>;
+  inline decltype(auto) map(F&& f) noexcept {
+    using option = Option<std::invoke_result_t<F, T>>;
     if (is_some()) {
-      return ReturnType::Some(f(*value_));
+      return option::Some(f(*value_));
     } else {
-      return ReturnType::None();
+      return option::None();
     }
   }
 
   // And then - chain Options
   template <typename F>
-  inline auto and_then(F&& f) noexcept -> decltype(auto) {
+  inline decltype(auto) and_then(F&& f) noexcept {
     if (is_some()) {
       return f(*value_);
     } else {
-      using ReturnType = std::invoke_result_t<F, T>;
-      return ReturnType::None();
+      using option = std::invoke_result_t<F, T>;
+      return option::None();
     }
   }
 
   // Pattern matching using variant-like interface
   template <typename SomeFunc, typename NoneFunc>
-  inline auto match(SomeFunc&& some_func, NoneFunc&& none_func) noexcept
-      -> decltype(auto) {
+  inline decltype(auto) match(SomeFunc&& some_func,
+                              NoneFunc&& none_func) noexcept {
     if (is_some()) {
       return some_func(*value_);
     } else {
