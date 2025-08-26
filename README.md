@@ -2,7 +2,7 @@
 
 C++11/13/17 port of [RustCxx](https://github.com/DapengFeng/RustCxx), using [variant-lite](https://github.com/martinmoene/variant-lite) and [optional-lite](https://github.com/martinmoene/optional-lite)
 
-Note that currently just modified files in include, examples and cmake won't work.
+**NOTE:** currently just modified files in include, examples and cmake won't work.
 
 [Original README is here](README_ORIG.md)
 
