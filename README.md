@@ -1,28 +1,33 @@
-# RustCxx - Rust-style Enums for C++
+# RustCxx_11
 
-RustCxx is a modern C++20 header-only library that provides Rust-style enums, `Result`, and `Option` types for C++. It's designed to bring the expressiveness and safety of Rust's type system to C++.
+C++11/13 port of [RustCxx](https://github.com/DapengFeng/RustCxx), using [variant-lite](https://github.com/martinmoene/variant-lite) and [optional-lite](https://github.com/martinmoene/optional-lite)
 
-## Features
+Note that currently just modified files in include, examples and cmake won't work.
 
-- 🚀 **Header-only**: Just include and use
-- 🦀 **Rust-inspired**: Familiar API for Rust developers
-- 🔒 **Type-safe**: Compile-time type checking
-- 🎯 **Pattern Matching**: Expressive pattern matching with lambdas
-- ⚡ **Modern C++**: Requires C++20, uses `std::variant` under the hood
-- 🧪 **Well-tested**: Comprehensive test suite
+[Original README is here](README_ORIG.md)
 
-## Quick Start
+## Install
 
-### Basic Enum Usage
+Just copy files in `include` into your project.
+
+## Usage
+
+### Enum
 
 ```cpp
-#include "rustcxx/rustcxx.hpp"
-using namespace rustcxx;
+#include "rustcxx.hpp"
 
-// Define enum variants
-ENUM_VARIANT(Red);
-ENUM_VARIANT(Green);
-ENUM_VARIANT(Blue, int intensity);
+using namespace rust;
+
+// Define enum variants (C++17 or later)
+// ENUM_VARIANT(Red);
+// ENUM_VARIANT(Green);
+// ENUM_VARIANT(Blue, int intensity);
+
+// Define enum variants (C++11/13)
+ENUM_VARIANT0(Red);
+ENUM_VARIANT0(Green);
+ENUM_VARIANT1(Blue, int, intensity);
 
 using Color = Enum<Red, Green, Blue>;
 
@@ -31,15 +36,17 @@ Color color = Blue{128};
 
 // Pattern matching
 auto description = color.match(
-    [](const Red&) { return "It's red!"; },
-    [](const Green&) { return "It's green!"; },
+    [](const Red&)   { return std::string("It's red!"); },
+    [](const Green&) { return std::string("It's green!"); },
     [](const Blue& b) {
-        return "It's blue with intensity " + std::to_string(b.intensity);
+        return std::string("It's blue with intensity ") + std::to_string(b.intensity);
     }
 );
+
+std::cout << description << std::endl;
 ```
 
-### Result Type
+### Result
 
 ```cpp
 auto divide = [](int a, int b) -> Result<double, std::string> {
@@ -66,7 +73,7 @@ auto chained = divide(20, 4)
     .and_then([&](double x) { return divide(static_cast<int>(x), 2); });
 ```
 
-### Option Type
+### Option
 
 ```cpp
 auto find_user = [](int id) -> Option<std::string> {
@@ -89,136 +96,10 @@ auto greeting = find_user(1)
     .unwrap_or("Hello, stranger!");
 ```
 
-## Building
-
-### Requirements
-
-- C++20 compatible compiler
-- CMake 3.14 or later
-
-### Build Examples
-
-```bash
-mkdir build && cd build
-cmake ..
-make
-./basic_usage
-```
-
-### Run Tests
-
-```bash
-cmake -DRUSTCXX_BUILD_TESTS=ON ..
-make
-ctest
-```
-
-## API Reference
-
-### Enum<Types...>
-
-Core enum type that wraps `std::variant` with ergonomic APIs.
-
-#### Methods
-
-- `bool is<T>() const` - Check if enum holds type T
-- `T& get<T>()` - Get value of type T (throws if wrong type)
-- `T* get_if<T>()` - Get pointer to value if type T, nullptr otherwise
-- `auto match(lambdas...)` - Pattern match over all variants
-- `std::size_t index() const` - Get index of current variant
-
-### Result<T, E>
-
-Type-safe error handling similar to Rust's `Result<T, E>`.
-
-#### Static Methods
-
-- `Result::Ok(value)` - Create successful result
-- `Result::Err(error)` - Create error result
-
-#### Methods
-
-- `bool is_ok() const` - Check if result is Ok
-- `bool is_err() const` - Check if result is Err
-- `T unwrap()` - Get Ok value (throws if Err)
-- `T unwrap_or(default)` - Get Ok value or default
-- `E unwrap_err()` - Get Err value (throws if Ok)
-- `auto map(func)` - Transform Ok value
-- `auto map_err(func)` - Transform Err value
-- `auto and_then(func)` - Chain Results
-- `auto match(ok_func, err_func)` - Pattern match
-
-### Option<T>
-
-Nullable type similar to Rust's `Option<T>`.
-
-#### Static Methods
-
-- `Option::Some(value)` - Create Some option
-- `Option::None()` - Create None option
-
-#### Methods
-
-- `bool is_some() const` - Check if option has value
-- `bool is_none() const` - Check if option is empty
-- `T unwrap()` - Get value (throws if None)
-- `T unwrap_or(default)` - Get value or default
-- `auto map(func)` - Transform Some value
-- `auto and_then(func)` - Chain Options
-- `auto match(some_func, none_func)` - Pattern match
-
-## Macros
-
-- `ENUM_VARIANT(name)` - Define empty variant
-
-## Integration
-
-### CMake
-
-If installed:
-
-```cmake
-find_package(rustcxx REQUIRED)
-target_link_libraries(your_target rustcxx::rustcxx)
-```
-
-Or as subdirectory:
-
-```cmake
-add_subdirectory(path/to/rustcxx)
-target_link_libraries(your_target rustcxx)
-```
-
-### Direct Include
-
-Simply copy `include/rustcxx/rustcxx.hpp` to your project and include it.
-
-## Examples
-
-See the `examples/` directory for more comprehensive examples:
-
-- `basic_usage.cpp` - Demonstrates all core features
-- More examples coming soon!
-
-## Comparison with Rust
-
-| Rust | RustCxx |
-|------|-------|
-| `enum Color { Red, Green, Blue(u8) }` | `ENUM_VARIANT(Red); ENUM_VARIANT(Red); ENUM_VARIANT(Blue, uint8_t intensity); using Color = Enum<Red, Green, Blue>;` |
-| `Result<T, E>` | `Result<T, E>` |
-| `Option<T>` | `Option<T>` |
-| `match expr { ... }` | `expr.match(...)` |
-| `result?` | `result.and_then(...)` |
-| `option.map(f)` | `option.map(f)` |
-
-## Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
-
 ## License
 
-Licensed under the Apache License, Version 2.0. See [LICENSE](LICENSE) for details.
+Apache-2.0
 
-## Acknowledgments
-
-Inspired by Rust's excellent type system and the many discussions about bringing similar functionality to C++.
+- [RustCxx](https://github.com/DapengFeng/RustCxx): Apache-2.0
+- [variant-lite](https://github.com/martinmoene/variant-lite): BSL-1.0
+- [optional-lite](https://github.com/martinmoene/optional-lite): BSL-1.0
